@@ -1,6 +1,97 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
+
+.quick-start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  background: #1c2919;
+  border: 1px solid #4c6638;
+  border-radius: 8px;
+  padding: 18px;
+  margin-bottom: 24px;
+}
+.quick-start > div {
+  flex: 1 1 400px;
+}
+.quick-start p {
+  color: #b7c5b0;
+  font-size: 14px;
+  margin-top: 6px;
+}
+.quick-start .primary-button {
+  width: auto;
+}
+.quick-start > a {
+  color: #c0ee98;
+  font-size: 14px;
+}
+.interactive-flow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 18px;
+}
+.interactive-node {
+  background: #202c22;
+  border: 1px solid #4b6340;
+  border-radius: 8px;
+  padding: 16px;
+  min-width: 0;
+}
+.interactive-node label {
+  display: block;
+  font-size: 14px;
+  color: #c6e5b2;
+  margin-bottom: 12px;
+}
+.interactive-node [data-slot='native-select-wrapper'] {
+  width: 100%;
+}
+.interactive-node select {
+  height: auto;
+  min-height: 44px;
+  font-size: 14px;
+}
+.interactive-node p {
+  color: #b2beb8;
+  font-size: 14px;
+  margin-top: 10px;
+}
+.execution-next {
+  display: block;
+  padding: 14px 0;
+  color: #c9e7b1;
+  font-size: 16px;
+  scroll-margin-top: 24px;
+}
+.journal-trash {
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+  font-size: 14px;
+}
+.journal-trash summary {
+  cursor: pointer;
+  padding: 10px 0;
+  color: var(--primary);
+}
+@media (max-width: 1100px) {
+  .lab-grid .design-panel {
+    order: 1;
+    grid-row: auto;
+  }
+}
+@media (max-width: 650px) {
+  .interactive-flow {
+    grid-template-columns: 1fr;
+  }
+  .quick-start .primary-button {
+    width: 100%;
+  }
+}
 @custom-variant dark (&:is(.dark *));
 @theme inline {
   --color-background: var(--background);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { ConfirmAction } from '@/components/confirm-action';
 import {
   ArrowLeft,
   ArrowRight,
@@ -38,6 +38,9 @@ import {
   transition,
   metrics,
   report,
+  restartBusiness,
+  restoreBusinessArchive,
+  type ReviewDraft,
   type BusinessState,
   type Mode,
   type Action,
@@ -50,14 +53,24 @@ function Review({
   ticket,
   mode,
   dispatch,
+  saved,
+  saveDraft,
 }: {
   ticket: Ticket;
   mode: Mode;
   dispatch: (action: Action) => void;
+  saved?: ReviewDraft;
+  saveDraft: (draft: ReviewDraft) => void;
 }) {
-  const [draft, setDraft] = useState(ticket.draft);
-  const [team, setTeam] = useState<Team>(ticket.team);
-  const [reason, setReason] = useState(ticket.reason);
+  const form = saved ?? {
+    draft: ticket.draft,
+    team: ticket.team,
+    reason: ticket.reason,
+  };
+  const { draft, team, reason } = form;
+  const setDraft = (draft: string) => saveDraft({ ...form, draft });
+  const setTeam = (team: Team) => saveDraft({ ...form, team });
+  const setReason = (reason: string) => saveDraft({ ...form, reason });
   const editable = ticket.status === 'pending' || ticket.status === 'blocked';
   const input = requests.find((r) => r.id === ticket.id)!;
   return (
@@ -69,7 +82,7 @@ function Review({
         <h2 id="review-title">{ticket.id} 검토</h2>
         <span className="business-tag">{statusNames[ticket.status]}</span>
       </div>
-      <section>
+      <section id="business-input">
         <h3>1. 고객 입력</h3>
         <blockquote>{input.text}</blockquote>
         <p className="business-muted">
@@ -77,18 +90,18 @@ function Review({
           대상입니다.
         </p>
       </section>
-      <section>
+      <section id="business-evidence">
         <h3>2. 판단 근거</h3>
         <p className="business-evidence">{input.evidence}</p>
         <p className="business-muted">
           평가 기준 팀: {input.expected} · 교육용 기준을 공개합니다.
         </p>
       </section>
-      <section className="business-form">
+      <section className="business-form" id="business-review">
         <h3>3. 사람이 확인하고 결정하기</h3>
         <p className="business-muted">
-          승인·반려하면 저장됩니다. 확정 전 입력은 다른 문의나 처리 방식으로
-          이동하면 초기화됩니다.
+          입력 중인 초안도 이 브라우저에 저장됩니다. 담당 팀과 근거를 읽고 검토
+          사유를 적으면 승인·반려 버튼이 활성화됩니다.
         </p>
         <label htmlFor="review-team">담당 팀</label>
         <NativeSelect
@@ -178,7 +191,7 @@ function Review({
           </p>
         )}
       </section>
-      <section>
+      <section id="business-send">
         <h3>4. 모의 발송과 복구</h3>
         <p className="business-muted">
           실제 메일을 보내지 않습니다. 장애 실험은 발송 성공 후 응답만 유실되는
@@ -223,6 +236,8 @@ export default function BusinessPage() {
   const [notice, setNotice] = useState('기록을 불러오고 있습니다.');
   const [mode, setMode] = useState<Mode>('ai');
   const [selected, setSelected] = useState('CS-101');
+  const [showReport, setShowReport] = useState(false);
+  const [reportNotice, setReportNotice] = useState('');
   useEffect(() => {
     try {
       // oxlint-disable-next-line react/react-compiler -- Hydrate browser-only storage after SSR; the ready guard prevents overwriting it.
@@ -265,6 +280,17 @@ export default function BusinessPage() {
         return;
       }
       setState((s) => ({ ...s, actions: [...s.actions, action] }));
+      window.setTimeout(
+        () =>
+          document
+            .getElementById(
+              action.type === 'review' && action.decision === 'approve'
+                ? 'business-send'
+                : 'review-title',
+            )
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+        80,
+      );
       setNotice(
         action.type === 'start'
           ? '6개 접수 이벤트를 처리했습니다. 중복 1건을 제외한 문의 5건을 검토하세요.'
@@ -284,15 +310,20 @@ export default function BusinessPage() {
     a.href = url;
     a.download = 'customer-support-process-report.md';
     a.click();
+    setNotice(
+      '보고서 다운로드를 요청했습니다. 브라우저의 다운로드 목록에서 확인하세요.',
+    );
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   return (
     <main className="business-page">
       <header className="business-header">
-        <Link href="/" className="business-back">
+        {/* Full navigation avoids the Vinext Link prefetch runtime error. */}
+        {/* oxlint-disable-next-line nextjs/no-html-link-for-pages */}
+        <a href="/" className="business-back">
           <ArrowLeft size={17} />
           기초 실습 10개
-        </Link>
+        </a>
         <span>
           <ShieldCheck size={16} />
           합성 데이터 · 외부 전송 없음
@@ -330,17 +361,42 @@ export default function BusinessPage() {
         </div>
       </section>
       <ol className="business-flow" aria-label="업무 단계">
-        {[
-          '접수·중복 검사',
-          '정보·권한 확인',
-          '분류·초안',
-          '사람 승인',
-          '발송·복구',
-        ].map((s, i) => (
+        {(ticket && ['CS-102', 'CS-103'].includes(ticket.id)
+          ? [
+              '접수 완료',
+              '정보·보안 검사',
+              ticket.status === 'rejected'
+                ? '수동 인계 완료'
+                : '예외 검토 필요',
+              '발송 차단',
+            ]
+          : [
+              '접수·중복 검사',
+              `${modeNames[mode]} 분류·초안`,
+              ticket ? statusNames[ticket.status] : '사람 승인',
+              '모의 발송·복구',
+            ]
+        ).map((s, i) => (
           <li key={s}>
             <span>{i + 1}</span>
-            {s}
-            {i < 4 && <ArrowRight size={16} aria-hidden="true" />}
+            <button
+              disabled={!ticket}
+              onClick={() =>
+                document
+                  .getElementById(
+                    [
+                      'business-input',
+                      'business-evidence',
+                      'business-review',
+                      'business-send',
+                    ][i],
+                  )
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+            >
+              {s}
+            </button>
+            {i < 3 && <ArrowRight size={16} aria-hidden="true" />}
           </li>
         ))}
       </ol>
@@ -375,6 +431,46 @@ export default function BusinessPage() {
           {run ? '같은 접수 재실행' : '문의 6건 접수하기'}
         </Button>
       </section>
+      <section className="business-next" aria-label="지금 할 일">
+        <strong>
+          {!run
+            ? '① 먼저 문의를 접수하세요'
+            : metrics(run).pending === 0
+              ? '실습 처리 완료! 다른 방식과 결과를 비교하거나 설계 보고서를 내려받으세요.'
+              : !ticket
+                ? '② 문의를 선택하세요'
+                : ticket.status === 'pending'
+                  ? '② 근거 확인 → 검토 사유 작성 → 승인 또는 반려'
+                  : ticket.status === 'blocked'
+                    ? '② 예외 문의입니다. 사유와 담당 팀을 확인하고 반려하세요'
+                    : ticket.status === 'approved'
+                      ? '③ 승인 완료! 아래에서 모의 발송하거나 장애를 실험하세요'
+                      : ticket.status === 'retry'
+                        ? '③ 응답이 끊겼습니다. 같은 요청 재시도로 복구하세요'
+                        : '④ 이 문의 처리 완료. 다음 문의를 선택하세요'}
+        </strong>
+        <p>
+          이 실습은 문의를 끝까지 처리하는 모의 업무입니다. 흐름의 단계를
+          클릭하면 해당 작업으로 이동합니다. 문의에 따라 승인 경로와 예외 인계
+          경로가 달라집니다.
+        </p>
+        {run && (
+          <ConfirmAction
+            label="현재 방식 새로 시작"
+            description="현재 방식의 실행과 초안을 보관 기록으로 옮깁니다. 다른 방식과 설계서는 유지하며, 나중에 복원할 수 있습니다."
+            onConfirm={() => {
+              try {
+                setState(restartBusiness(state, mode, crypto.randomUUID()));
+                setNotice(
+                  '기존 실행을 보관했습니다. 문의 접수로 새 실습을 시작하세요.',
+                );
+              } catch (e) {
+                setNotice((e as Error).message);
+              }
+            }}
+          />
+        )}
+      </section>
       <output
         className={
           'business-notice' + (storageBlocked ? ' business-warning' : '')
@@ -407,7 +503,19 @@ export default function BusinessPage() {
                   'business-ticket' + (selected === t.id ? ' selected' : '')
                 }
                 aria-pressed={selected === t.id}
-                onClick={() => setSelected(t.id)}
+                onClick={() => {
+                  setSelected(t.id);
+                  window.setTimeout(
+                    () =>
+                      document
+                        .getElementById('review-title')
+                        ?.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'start',
+                        }),
+                    80,
+                  );
+                }}
               >
                 <span>
                   {t.id} · {requests.find((r) => r.id === t.id)!.kind}
@@ -423,6 +531,13 @@ export default function BusinessPage() {
               ticket={ticket}
               mode={mode}
               dispatch={dispatch}
+              saved={state.drafts[`${mode}:${ticket.id}`]}
+              saveDraft={(draft) =>
+                setState((s) => ({
+                  ...s,
+                  drafts: { ...s.drafts, [`${mode}:${ticket.id}`]: draft },
+                }))
+              }
             />
           )}
         </div>
@@ -436,6 +551,25 @@ export default function BusinessPage() {
         </section>
       )}
       <section className="business-card business-comparison">
+        <details>
+          <summary>보관된 실행 {state.archives.length}개 · 복원하기</summary>
+          {state.archives.map((a) => (
+            <div className="business-row" key={a.id}>
+              <span>
+                {modeNames[a.mode]} · 처리 이벤트 {a.actions.length}개
+              </span>
+              <ConfirmAction
+                label="이 실행 복원"
+                description="이 방식의 현재 실행은 보관하고 선택한 실행으로 돌아갑니다. 다른 방식과 설계서는 변경하지 않습니다."
+                onConfirm={() => {
+                  setState(restoreBusinessArchive(state, a.id));
+                  setMode(a.mode);
+                  setNotice('보관된 실행과 초안을 복원했습니다.');
+                }}
+              />
+            </div>
+          ))}
+        </details>
         <h2>업무 결과 비교</h2>
         <p className="business-muted">
           같은 5건의 문의입니다. 미처리가 남아 있는 실행끼리는 최종 효율을
@@ -500,9 +634,23 @@ export default function BusinessPage() {
       <section className="business-card business-report">
         <div className="business-row">
           <h2>나의 업무 설계서</h2>
-          <Button variant="outline" disabled={!ready} onClick={download}>
+          <Button
+            variant="outline"
+            disabled={!ready}
+            onClick={() => {
+              setShowReport((v) => !v);
+              if (!showReport)
+                window.setTimeout(
+                  () =>
+                    document
+                      .getElementById('report-preview')
+                      ?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+                  80,
+                );
+            }}
+          >
             <Download size={16} />
-            보고서 내려받기
+            보고서 열기·저장
           </Button>
         </div>
         <p className="business-muted">
@@ -545,6 +693,48 @@ export default function BusinessPage() {
         ))}
       </section>
       <section className="business-card business-sources">
+        {showReport && (
+          <section className="report-preview" aria-label="보고서 미리보기">
+            <h2>보고서 미리보기</h2>
+            <p className="business-muted">
+              파일 저장이 지원되지 않는 브라우저에서도 아래 내용을 복사해 보관할
+              수 있습니다. 현재 활성 실행의 결과를 포함합니다.
+            </p>
+            <Textarea
+              id="report-preview"
+              aria-label="보고서 내용"
+              readOnly
+              rows={14}
+              value={report(state)}
+            />
+            <div className="business-actions">
+              <Button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(report(state));
+                    setReportNotice('보고서 내용을 복사했습니다.');
+                  } catch {
+                    setReportNotice(
+                      '자동 복사가 지원되지 않습니다. 아래 내용을 선택해 직접 복사하세요.',
+                    );
+                    document
+                      .querySelector<HTMLTextAreaElement>('#report-preview')
+                      ?.select();
+                  }
+                }}
+              >
+                내용 복사
+              </Button>
+              <Button variant="outline" onClick={download}>
+                파일로 저장
+              </Button>
+              <Button variant="outline" onClick={() => setShowReport(false)}>
+                미리보기 닫기
+              </Button>
+            </div>
+            <output>{reportNotice}</output>
+          </section>
+        )}
         <h2>실습과 연결되는 공식 자료</h2>
         <p className="business-muted">
           아래 자료의 설계 패턴을 교육용으로 재구성했습니다. 이 시나리오와

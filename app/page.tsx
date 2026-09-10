@@ -7,13 +7,11 @@ import {
   Check,
   ChevronRight,
   CircleHelp,
-  Cpu,
   Database,
   FlaskConical,
   GitBranch,
   Play,
   RotateCcw,
-  ShieldCheck,
   Sparkles,
   Terminal,
   History,
@@ -45,6 +43,8 @@ import {
   emptyState,
   restoreState,
   recordRun,
+  trashRuns,
+  restoreRun,
   completed,
   reviewQuestion,
   STORAGE_KEY,
@@ -60,6 +60,8 @@ function Lab() {
   const [tab, setTab] = useState('results');
   const [selectedRun, setSelectedRun] = useState('');
   const [baseline, setBaseline] = useState('');
+  const [journalNotice, setJournalNotice] = useState('');
+  const resultRef = useRef<HTMLDivElement>(null);
   const { setOpenMobile } = useSidebar();
   useEffect(() => {
     try {
@@ -144,6 +146,13 @@ function Lab() {
     setBaseline('');
     setTab('results');
     setOpenMobile(false);
+    window.setTimeout(
+      () =>
+        document
+          .querySelector('.quick-start')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      80,
+    );
   }
   function execute(
     id: string,
@@ -165,6 +174,14 @@ function Lab() {
     setSelectedRun(run.id);
     setBaseline('');
     setTab('results');
+    window.setTimeout(
+      () =>
+        resultRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        }),
+      80,
+    );
     return out;
   }
   const executeRef = useRef(execute);
@@ -356,6 +373,25 @@ function Lab() {
           </span>
         </header>
         <div className="page-content">
+          <section className="quick-start" aria-label="실습 사용 방법">
+            <div>
+              <strong>
+                여기서 하는 일: AI의 답변 조건을 바꾸고 결과 비교하기
+              </strong>
+              <p>
+                ① 기본 설계 실행 → ② 실패 사례 펼치기 → ③ 선택지 변경 후 다시
+                실행. 실제 AI 채팅이나 자유로운 노드 편집기는 아닙니다.
+              </p>
+            </div>
+            <button
+              className="primary-button"
+              disabled={!ready}
+              onClick={() => execute(lesson.id, values, s.profile, 'practice')}
+            >
+              {result ? '현재 설계로 다시 실행' : '첫 실험 실행하기'}
+            </button>
+            <a href="/business">고객 문의를 직접 승인하는 업무 실습 →</a>
+          </section>
           <div className="lesson-heading">
             <div>
               <div className="eyebrow">
@@ -382,39 +418,39 @@ function Lab() {
                 <div className="section-line">
                   <span>
                     <GitBranch size={16} />
-                    시스템 흐름
+                    설계 흐름 · 아래 선택지를 바꿔보세요
                   </span>
                   <span className="micro">
                     {deep ? '근거와 판정을 직접 대조' : '작성된 정책 시나리오'}
                   </span>
                 </div>
-                <div className="flow">
-                  <div className="flow-node">
-                    <span className="node-type">INPUT</span>
-                    <Terminal size={25} />
-                    <strong>{lesson.nodes[0]}</strong>
-                    <small>{lesson.tests.length}개 학습 사례</small>
-                  </div>
-                  <ArrowRight className="flow-arrow" />
-                  <div className="flow-node model-node">
-                    <span className="node-type">PROCESS</span>
-                    <Cpu size={28} />
-                    <strong>{lesson.nodes[1]}</strong>
-                    <small>{lesson.controls[0].options[values[0]].label}</small>
-                  </div>
-                  <ArrowRight className="flow-arrow" />
-                  <div className="flow-node output-node">
-                    <span className="node-type">VERIFY</span>
-                    <ShieldCheck size={25} />
-                    <strong>{lesson.nodes[2]}</strong>
-                    <small>
-                      {stale
-                        ? '변경한 설계 실행 필요'
-                        : result
-                          ? `${result.passed}/${result.cases.length} 판정 일치`
-                          : '근거를 보고 개선하기'}
-                    </small>
-                  </div>
+                <div className="interactive-flow">
+                  {lesson.controls.map((c, ci) => (
+                    <div className="interactive-node" key={c.label}>
+                      <label htmlFor={`flow-${ci}`}>
+                        단계 {ci + 1} · {c.label}
+                      </label>
+                      <NativeSelect
+                        id={`flow-${ci}`}
+                        aria-label={`흐름: ${c.label}`}
+                        value={String(values[ci])}
+                        onChange={(e) =>
+                          patch({
+                            choices: values.map((v, i) =>
+                              i === ci ? Number(e.target.value) : v,
+                            ),
+                          })
+                        }
+                      >
+                        {c.options.map((o, oi) => (
+                          <NativeSelectOption value={String(oi)} key={o.label}>
+                            {o.label}
+                          </NativeSelectOption>
+                        ))}
+                      </NativeSelect>
+                      <p>{c.options[values[ci]].description}</p>
+                    </div>
+                  ))}
                 </div>
                 <div className="context-strip">
                   <Database size={16} />
@@ -432,6 +468,23 @@ function Lab() {
                   </span>
                   <span>ENGINE / 2.0</span>
                 </div>
+              </div>
+              <div ref={resultRef} className="execution-next" role="status">
+                {stale
+                  ? '설계가 변경됐습니다. 다시 실행하면 아래 결과가 바뀝니다.'
+                  : result
+                    ? `실행 완료: ${result.passed}/${result.cases.length} 성공. 아래 사례에서 근거를 확인하세요.`
+                    : '위에서 첫 실험을 실행하면 사례별 결과가 여기에 나타납니다.'}
+                {stale && (
+                  <button
+                    className="text-action"
+                    onClick={() =>
+                      execute(lesson.id, values, s.profile, 'practice')
+                    }
+                  >
+                    변경한 설계 실행 →
+                  </button>
+                )}
               </div>
               <Tabs
                 value={tab}
@@ -660,7 +713,7 @@ function Lab() {
                       <strong>이 실행의 설계 이유</strong>
                       <p>
                         {activeRun?.note ||
-                          '기록한 이유가 없습니다. 다음 실행 전에 오른쪽에 가설을 적어보세요.'}
+                          '기록한 이유가 없습니다. 다음 실행 전에 가설과 실행 영역에 이유를 적어보세요.'}
                       </p>
                     </div>
                   )}
@@ -885,6 +938,25 @@ function Lab() {
                   <div className="notes">
                     <div className="eyebrow">EXPERIMENT JOURNAL</div>
                     <h2>이 실험의 기록 · 최근 20회</h2>
+                    <button
+                      className="text-action"
+                      disabled={!s.history.length}
+                      onClick={() => {
+                        try {
+                          setState(trashRuns(state, lesson.id));
+                          setSelectedRun('');
+                          setBaseline('');
+                          setJournalNotice(
+                            '기록을 휴지통으로 옮겼습니다. 아래에서 복원할 수 있습니다.',
+                          );
+                        } catch (e) {
+                          setJournalNotice((e as Error).message);
+                        }
+                      }}
+                    >
+                      이 실험 기록 모두 삭제
+                    </button>
+                    <output className="execution-next">{journalNotice}</output>
                     <p className="micro">
                       기록을 열면 당시 설정·근거·판정을 확인할 수 있습니다. 설정
                       복원은 현재 변수만 바꾸며 기록은 삭제하지 않습니다.
@@ -925,6 +997,24 @@ function Lab() {
                           <div className="journal-actions">
                             <button
                               className="text-action"
+                              aria-label={`기록 삭제 ${r.id}`}
+                              onClick={() => {
+                                try {
+                                  setState(trashRuns(state, lesson.id, r.id));
+                                  setSelectedRun('');
+                                  setBaseline('');
+                                  setJournalNotice(
+                                    '기록 1개를 휴지통으로 옮겼습니다.',
+                                  );
+                                } catch (e) {
+                                  setJournalNotice((e as Error).message);
+                                }
+                              }}
+                            >
+                              삭제 · 휴지통으로
+                            </button>
+                            <button
+                              className="text-action"
                               onClick={() => {
                                 setSelectedRun(r.id);
                                 setBaseline('');
@@ -950,6 +1040,36 @@ function Lab() {
                         </article>
                       );
                     })}
+                    <details className="journal-trash">
+                      <summary>
+                        휴지통 {s.trash.length}개 · 삭제한 기록 복원
+                      </summary>
+                      <p>
+                        삭제한 실행은 결과와 완료 판정에서 제외됩니다. 복원하면
+                        다시 반영됩니다. 영구 삭제하지 않습니다.
+                      </p>
+                      {s.trash.map((r) => (
+                        <div className="journal-entry" key={r.id}>
+                          <span>
+                            {new Date(r.at).toLocaleString('ko-KR')} ·{' '}
+                            {r.note || '설계 이유 미작성'}
+                          </span>
+                          <button
+                            className="text-action"
+                            onClick={() => {
+                              try {
+                                setState(restoreRun(state, lesson.id, r.id));
+                                setJournalNotice('기록을 복원했습니다.');
+                              } catch (e) {
+                                setJournalNotice((e as Error).message);
+                              }
+                            }}
+                          >
+                            기록 복원
+                          </button>
+                        </div>
+                      ))}
+                    </details>
                   </div>
                 </TabsContent>
               </Tabs>
@@ -958,7 +1078,7 @@ function Lab() {
               <div className="panel-title">
                 <h2>
                   <FlaskConical size={18} />
-                  설계 변수
+                  가설과 실행
                 </h2>
                 <button
                   className="icon-button"
@@ -996,41 +1116,6 @@ function Lab() {
                   </RadioGroup>
                 </fieldset>
               )}
-              {lesson.controls.map((c, ci) => (
-                <fieldset className="control" key={lesson.id + c.label}>
-                  <legend>
-                    <span>0{ci + 1}</span>
-                    {c.label}
-                  </legend>
-                  <RadioGroup
-                    aria-label={c.label}
-                    value={String(values[ci])}
-                    onValueChange={(v) =>
-                      patch({
-                        choices: values.map((x, i) =>
-                          i === ci ? Number(v) : x,
-                        ),
-                      })
-                    }
-                  >
-                    {c.options.map((o, oi) => (
-                      <label
-                        className={
-                          'design-option ' +
-                          (values[ci] === oi ? 'selected' : '')
-                        }
-                        key={o.label}
-                      >
-                        <RadioGroupItem value={String(oi)} />
-                        <span>
-                          <strong>{o.label}</strong>
-                          <small>{o.description}</small>
-                        </span>
-                      </label>
-                    ))}
-                  </RadioGroup>
-                </fieldset>
-              ))}
               <div className="hypothesis">
                 <label htmlFor="design-reason">왜 이 설계를 선택했나요?</label>
                 <Textarea

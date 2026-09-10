@@ -4,6 +4,28 @@
   padding: 0 32px 40px;
   font-size: 16px;
 }
+.business-next {
+  padding: 18px;
+  border: 1px solid #587840;
+  background: #202d1b;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+.business-next p {
+  font-size: 14px;
+  color: #b8c6b0;
+  margin: 8px 0 14px;
+}
+.business-flow button {
+  padding: 8px 10px;
+  border: 1px solid #465e36;
+  border-radius: 6px;
+  background: #1c271a;
+  color: #d4ecc2;
+}
+.review-panel section {
+  scroll-margin-top: 20px;
+}
 .business-header,
 .business-back,
 .business-header > span,

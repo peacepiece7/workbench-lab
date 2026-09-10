@@ -118,7 +118,15 @@ export type BusinessState = {
   goal: string;
   rationale: string;
   operations: string;
+  drafts: Record<string, ReviewDraft>;
+  archives: {
+    id: string;
+    mode: Mode;
+    actions: Action[];
+    drafts: Record<string, ReviewDraft>;
+  }[];
 };
+export type ReviewDraft = { draft: string; team: Team; reason: string };
 export const BUSINESS_KEY = 'ai-native-business-v1';
 export const emptyBusiness = (): BusinessState => ({
   version: 1,
@@ -126,7 +134,67 @@ export const emptyBusiness = (): BusinessState => ({
   goal: '',
   rationale: '',
   operations: '',
+  drafts: {},
+  archives: [],
 });
+
+export function restartBusiness(
+  s: BusinessState,
+  mode: Mode,
+  id: string,
+): BusinessState {
+  if (s.archives.length >= 20)
+    throw new Error(
+      '보관 기록 20개에 도달했습니다. 기존 기록을 복원하여 실습하세요.',
+    );
+  const actions = s.actions.filter((a) => a.mode === mode);
+  const drafts = Object.fromEntries(
+    Object.entries(s.drafts).filter(([k]) => k.startsWith(mode + ':')),
+  );
+  return {
+    ...s,
+    actions: s.actions.filter((a) => a.mode !== mode),
+    drafts: Object.fromEntries(
+      Object.entries(s.drafts).filter(([k]) => !k.startsWith(mode + ':')),
+    ),
+    archives: actions.length
+      ? [{ id, mode, actions, drafts }, ...s.archives]
+      : s.archives,
+  };
+}
+export function restoreBusinessArchive(
+  s: BusinessState,
+  id: string,
+): BusinessState {
+  const saved = s.archives.find((a) => a.id === id);
+  if (!saved) return s;
+  const current = s.actions.filter((a) => a.mode === saved.mode);
+  const currentDrafts = Object.fromEntries(
+    Object.entries(s.drafts).filter(([k]) => k.startsWith(saved.mode + ':')),
+  );
+  return {
+    ...s,
+    actions: [
+      ...s.actions.filter((a) => a.mode !== saved.mode),
+      ...saved.actions,
+    ],
+    drafts: {
+      ...Object.fromEntries(
+        Object.entries(s.drafts).filter(
+          ([k]) => !k.startsWith(saved.mode + ':'),
+        ),
+      ),
+      ...saved.drafts,
+    },
+    archives: s.archives.flatMap((a) =>
+      a.id !== id
+        ? [a]
+        : current.length
+          ? [{ ...saved, actions: current, drafts: currentDrafts }]
+          : [],
+    ),
+  };
+}
 
 function start(mode: Mode): Run {
   const tickets: Ticket[] = [];
@@ -276,6 +344,59 @@ export function restoreBusiness(raw: string | null): BusinessState {
       throw new Error('검토 형식 오류');
   }
   replay(s.actions);
+  s.drafts ??= {};
+  s.archives ??= [];
+  if (
+    !s.drafts ||
+    typeof s.drafts !== 'object' ||
+    Array.isArray(s.drafts) ||
+    Object.keys(s.drafts).length > 15 ||
+    !Array.isArray(s.archives) ||
+    s.archives.length > 20
+  )
+    throw new Error('임시 입력 또는 보관 기록 형식 오류');
+  const validateDrafts = (d: Record<string, ReviewDraft>) => {
+    if (
+      !d ||
+      typeof d !== 'object' ||
+      Array.isArray(d) ||
+      Object.keys(d).length > 15
+    )
+      throw new Error('초안 형식 오류');
+    for (const [key, v] of Object.entries(d)) {
+      if (
+        !MODES.some((m) => requests.some((r) => key === `${m}:${r.id}`)) ||
+        !v ||
+        typeof v.draft !== 'string' ||
+        v.draft.length > 4000 ||
+        typeof v.reason !== 'string' ||
+        v.reason.length > 1000 ||
+        !teams.includes(v.team)
+      )
+        throw new Error('초안 필드 오류');
+    }
+  };
+  validateDrafts(s.drafts);
+  for (const a of s.archives) {
+    if (
+      !a ||
+      typeof a.id !== 'string' ||
+      a.id.length > 100 ||
+      !MODES.includes(a.mode) ||
+      !Array.isArray(a.actions) ||
+      a.actions.length > 500 ||
+      a.actions.some((action: Action) => action.mode !== a.mode)
+    )
+      throw new Error('보관 기록 형식 오류');
+    // Reuse the same validation without recursively accepting nested archives.
+    restoreBusiness(
+      JSON.stringify({
+        ...emptyBusiness(),
+        actions: a.actions,
+        drafts: a.drafts,
+      }),
+    );
+  }
   return s;
 }
 export function metrics(run: Run) {

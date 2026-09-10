@@ -21,6 +21,7 @@ export type LessonState = {
   answer: string;
   checked: boolean;
   history: Run[];
+  trash: Run[];
   proofs: Run[];
   reviewAnswer: string;
   reviewChecked: boolean;
@@ -38,6 +39,7 @@ export const emptyLesson = (): LessonState => ({
   answer: '',
   checked: false,
   history: [],
+  trash: [],
   proofs: [],
   reviewAnswer: '',
   reviewChecked: false,
@@ -90,6 +92,63 @@ export function completed(id: string, s: LessonState) {
   return (
     practice && review && s.checked && s.answer === String(lesson.quiz.correct)
   );
+}
+export function trashRuns(
+  state: LearningState,
+  id: string,
+  runId?: string,
+): LearningState {
+  const s = state.lessons[id];
+  const removed = s.history.filter((r) => !runId || r.id === runId);
+  if (s.trash.length + removed.length > 100)
+    throw new Error(
+      '휴지통은 100개까지 보관합니다. 먼저 필요한 기록을 복원하세요.',
+    );
+  const ids = new Set(removed.map((r) => r.id));
+  return {
+    ...state,
+    lessons: {
+      ...state.lessons,
+      [id]: {
+        ...s,
+        history: s.history.filter((r) => !ids.has(r.id)),
+        proofs: s.proofs.filter((r) => !ids.has(r.id)),
+        trash: [...removed, ...s.trash],
+      },
+    },
+  };
+}
+export function restoreRun(
+  state: LearningState,
+  id: string,
+  runId: string,
+): LearningState {
+  const s = state.lessons[id],
+    run = s.trash.find((r) => r.id === runId);
+  if (!run) return state;
+  if (s.history.length >= 20)
+    throw new Error(
+      '현재 기록이 20개입니다. 하나를 휴지통으로 옮긴 뒤 복원하세요.',
+    );
+  const good =
+    simulate(id, run.choices, run.profile, run.suite).goal &&
+    run.note.trim().length >= 12;
+  return {
+    ...state,
+    lessons: {
+      ...state.lessons,
+      [id]: {
+        ...s,
+        history: [run, ...s.history].sort(
+          (a, b) => Date.parse(b.at) - Date.parse(a.at),
+        ),
+        trash: s.trash.filter((r) => r.id !== runId),
+        proofs: good
+          ? [run, ...s.proofs.filter((r) => r.suite !== run.suite)].slice(0, 2)
+          : s.proofs,
+      },
+    },
+  };
 }
 export function restoreState(raw: string | null): LearningState {
   const base = emptyState();
@@ -153,31 +212,34 @@ export function restoreState(raw: string | null): LearningState {
             }
           })
         : [];
-      target.history = Array.isArray(s.history)
-        ? s.history.slice(0, 20).flatMap((r: Run) => {
-            try {
-              simulate(l.id, r.choices, r.profile, r.suite);
-              if (
-                typeof r.id !== 'string' ||
-                typeof r.at !== 'string' ||
-                !Number.isFinite(Date.parse(r.at))
-              )
+      for (const key of ['history', 'trash'] as const) {
+        target[key] = Array.isArray(s[key])
+          ? s[key].slice(0, key === 'history' ? 20 : 100).flatMap((r: Run) => {
+              try {
+                simulate(l.id, r.choices, r.profile, r.suite);
+                if (
+                  typeof r.id !== 'string' ||
+                  typeof r.at !== 'string' ||
+                  !Number.isFinite(Date.parse(r.at))
+                )
+                  return [];
+                return [
+                  {
+                    id: r.id.slice(0, 80),
+                    at: r.at,
+                    choices: [...r.choices],
+                    profile: r.profile,
+                    suite: r.suite,
+                    note:
+                      typeof r.note === 'string' ? r.note.slice(0, 2000) : '',
+                  },
+                ];
+              } catch {
                 return [];
-              return [
-                {
-                  id: r.id.slice(0, 80),
-                  at: r.at,
-                  choices: [...r.choices],
-                  profile: r.profile,
-                  suite: r.suite,
-                  note: typeof r.note === 'string' ? r.note.slice(0, 2000) : '',
-                },
-              ];
-            } catch {
-              return [];
-            }
-          })
-        : [];
+              }
+            })
+          : [];
+      }
     } catch {
       /* One damaged lesson does not discard the other lessons. */
     }
