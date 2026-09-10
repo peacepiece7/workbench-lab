@@ -1,0 +1,353 @@
+.guide-page {
+  max-width: 1200px;
+  margin: auto;
+  padding: 0 28px 56px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: #e2e9ed;
+}
+.guide-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 22px 0;
+  border-bottom: 1px solid #35434d;
+}
+.guide-brand {
+  font-weight: 750;
+  color: #edf5fa;
+}
+.guide-nav nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  font-size: 14px;
+}
+.guide-page a {
+  text-underline-offset: 5px;
+}
+.guide-page a:hover {
+  text-decoration: underline;
+}
+.guide-intro {
+  padding: 30px 0 26px;
+}
+.guide-label {
+  font-size: 14px;
+  color: #a4c8ec;
+}
+.guide-intro h1 {
+  font-size: clamp(25px, 3vw, 36px);
+  line-height: 1.35;
+  margin: 8px 0 12px;
+  letter-spacing: -0.035em;
+}
+.guide-intro p {
+  margin: 8px 0;
+  color: #b9c8d3;
+}
+.guide-safe {
+  font-size: 14px;
+}
+.guide-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.guide-curriculum h2 {
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+.guide-curriculum > button {
+  display: flex;
+  width: 100%;
+  gap: 12px;
+  text-align: left;
+  padding: 16px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  color: #bfccd5;
+  cursor: pointer;
+  line-height: 1.5;
+  font-size: 15px;
+}
+.guide-curriculum > button[aria-current] {
+  border-color: #658cba;
+  background: #1d3042;
+  color: #f1f7ff;
+}
+.guide-curriculum small {
+  display: block;
+  font-size: 13px;
+  color: #a9bbc9;
+  margin-top: 6px;
+}
+.guide-path {
+  padding: 18px 0;
+  border-top: 1px solid #35434d;
+  margin-top: 18px;
+}
+.guide-path h3,
+.guide-path h4 {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+.guide-path a {
+  display: block;
+  color: #a8cdf6;
+  margin: 10px 0;
+  font-size: 15px;
+}
+.guide-path p {
+  font-size: 14px;
+  color: #b5c4cd;
+}
+.guide-workspace {
+  min-width: 0;
+  border: 1px solid #40505e;
+  border-radius: 12px;
+  background: #151e27;
+  overflow: hidden;
+}
+.guide-task-head {
+  padding: 24px 26px 16px;
+}
+.guide-task-head h2 {
+  font-size: 24px;
+  line-height: 1.4;
+  margin: 8px 0;
+  scroll-margin-top: 18px;
+}
+.guide-task-head p {
+  font-size: 14px;
+  color: #b9c8d3;
+  margin: 8px 0;
+}
+.guide-steps {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 16px 24px;
+  background: #101820;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.guide-steps li {
+  font-size: 13px;
+  color: #9fadb9;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.guide-steps li[aria-current] {
+  color: #c3e1ff;
+  font-weight: 700;
+}
+.guide-steps li span {
+  border: 1px solid #516577;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  text-align: center;
+}
+.guide-active {
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.guide-active h3 {
+  font-size: 21px;
+  line-height: 1.5;
+}
+.guide-active > button {
+  align-self: flex-start;
+  white-space: normal;
+  height: auto;
+  min-height: 44px;
+  max-width: 100%;
+  font-size: 15px;
+  padding: 10px 16px;
+}
+.guide-message {
+  background: #202e3b;
+  border-left: 3px solid #7dafdf;
+  border-radius: 6px;
+  padding: 18px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.guide-message span {
+  font-size: 14px;
+  color: #aec6da;
+}
+.guide-message blockquote,
+.guide-message p {
+  margin: 10px 0 0;
+}
+.guide-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.guide-compare > div {
+  padding: 18px;
+  border: 1px solid #405260;
+  border-radius: 8px;
+}
+.guide-compare h4 {
+  font-size: 14px;
+  color: #b2d5f7;
+  margin-bottom: 10px;
+}
+.guide-active details {
+  padding: 12px 0;
+  border-block: 1px solid #344552;
+}
+.guide-active summary {
+  cursor: pointer;
+  color: #bbd8f2;
+  font-size: 14px;
+}
+.guide-active details p {
+  margin-top: 12px;
+}
+.guide-check {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 16px;
+  background: #202e3b;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.guide-check [data-slot='checkbox'] {
+  width: 20px;
+  height: 20px;
+}
+.guide-help,
+.guide-save {
+  display: block;
+  font-size: 14px;
+  color: #b3c2ce;
+}
+.guide-save {
+  padding: 16px 26px;
+  border-top: 1px solid #344552;
+}
+.guide-success {
+  padding: 14px;
+  background: #203d35;
+  color: #c3efde;
+  border-radius: 6px;
+}
+.guide-feedback {
+  padding: 14px;
+  background: #3d3020;
+  color: #f1d5a6;
+}
+.guide-active fieldset {
+  display: flex;
+  gap: 12px;
+  flex-direction: column;
+}
+.guide-active legend {
+  font-weight: 650;
+  margin-bottom: 14px;
+}
+.guide-active fieldset button {
+  height: auto;
+  white-space: normal;
+  min-height: 44px;
+  padding: 12px;
+  text-align: left;
+  justify-content: flex-start;
+  font-size: 15px;
+}
+.guide-active textarea {
+  font-size: 16px;
+  line-height: 1.7;
+  min-height: 130px;
+}
+.guide-resources {
+  margin-top: 32px;
+  border-top: 1px solid #35434d;
+  padding-top: 24px;
+}
+.guide-resources h2 {
+  font-size: 18px;
+}
+.guide-resources p {
+  font-size: 14px;
+  color: #b3c2ce;
+  margin: 10px 0;
+}
+.guide-resources a {
+  display: block;
+  color: #acd0f3;
+  font-size: 14px;
+  margin: 8px 0;
+}
+.guide-page button:focus-visible,
+.guide-page a:focus-visible,
+.guide-page summary:focus-visible {
+  outline: 3px solid #8cc6ff;
+  outline-offset: 4px;
+}
+@media (max-width: 800px) {
+  .guide-layout {
+    grid-template-columns: 1fr;
+  }
+  .guide-curriculum {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .guide-curriculum h2 {
+    width: 100%;
+  }
+  .guide-curriculum > button {
+    flex: 1;
+    min-width: 150px;
+  }
+  .guide-curriculum .guide-path {
+    display: none;
+  }
+  .guide-intro h1 br {
+    display: none;
+  }
+}
+@media (max-width: 500px) {
+  .guide-page {
+    padding: 0 16px 32px;
+  }
+  .guide-nav {
+    gap: 10px;
+  }
+  .guide-compare {
+    grid-template-columns: 1fr;
+  }
+  .guide-task-head,
+  .guide-active {
+    padding: 20px;
+  }
+  .guide-curriculum > button {
+    min-width: 100%;
+    margin: 0;
+    padding: 10px;
+  }
+  .guide-curriculum small {
+    display: inline;
+    margin-left: 10px;
+  }
+  .guide-steps {
+    padding: 14px 20px;
+  }
+  .guide-intro {
+    padding-top: 22px;
+  }
+}

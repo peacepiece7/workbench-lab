@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'AI Native Lab · 설계하며 배우는 AI',
+  title: 'AI 업무 자동화 배우기 · 안내형 실습',
   description:
-    '10개 시나리오에서 AI 설계를 실험하고, 실행 근거·평가·복습으로 배우는 한국어 AI Native 실험실.',
+    '고객 문의 한 건부터 따라 하며 AI에게 맡길 일과 사람이 확인할 일을 배우는 한국어 업무 자동화 실습.',
 };
 
 export default function RootLayout({
