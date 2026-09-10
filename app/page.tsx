@@ -270,6 +270,18 @@ function Lab() {
           </a>
         </SidebarHeader>
         <SidebarContent className="px-3">
+          <a
+            href="/business"
+            className="objective"
+            style={{ margin: '8px 0', fontSize: 14 }}
+          >
+            <GitBranch size={20} />
+            <span>
+              업무 자동화 실습
+              <br />
+              <strong>고객 문의 → 승인 → 인계</strong>
+            </span>
+          </a>
           <div className="nav-caption">
             설계하고 검증하기 <span>10 LABS</span>
           </div>
